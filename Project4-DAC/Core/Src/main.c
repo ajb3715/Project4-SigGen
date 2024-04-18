@@ -131,6 +131,8 @@ int main(void)
   MX_TIM5_Init();
   MX_RNG_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start(&htim2);
+  HAL_TIM_Base_Start(&htim5);
 
   /* USER CODE END 2 */
 
