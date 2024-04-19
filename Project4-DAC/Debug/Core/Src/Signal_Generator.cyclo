@@ -1,0 +1,7 @@
+../Core/Src/Signal_Generator.c:37:10:get_noise	14
+../Core/Src/Signal_Generator.c:85:6:init_DC	4
+../Core/Src/Signal_Generator.c:107:6:init_generator	4
+../Core/Src/Signal_Generator.c:129:6:init_triangle	6
+../Core/Src/Signal_Generator.c:159:6:init_rectangle	6
+../Core/Src/Signal_Generator.c:180:6:init_ekg	4
+../Core/Src/Signal_Generator.c:193:6:sig_gen	8

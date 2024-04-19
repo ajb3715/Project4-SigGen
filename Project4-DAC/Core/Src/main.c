@@ -19,7 +19,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-
+#include "Signal_Generator.h"
+#include "string.h"
+#include "stdlib.h"
+#include "stdio.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -70,6 +73,11 @@ const osThreadAttr_t RecieveCommand_attributes = {
 osMessageQueueId_t CommandQueueHandle;
 const osMessageQueueAttr_t CommandQueue_attributes = {
   .name = "CommandQueue"
+};
+/* Definitions for MUTEX */
+osMutexId_t MUTEXHandle;
+const osMutexAttr_t MUTEX_attributes = {
+  .name = "MUTEX"
 };
 /* USER CODE BEGIN PV */
 
@@ -138,6 +146,9 @@ int main(void)
 
   /* Init scheduler */
   osKernelInitialize();
+  /* Create the mutex(es) */
+  /* creation of MUTEX */
+  MUTEXHandle = osMutexNew(&MUTEX_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -521,7 +532,23 @@ void StartRecieveCommand(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+  osMutexAcquire(MUTEXHandle, osWaitForever);
+			  if(osMessageQueueGetCount(CommandQueueHandle) != 0){
+				  char buf[256];
+				  struct user_command *cmd = (struct user_command *)malloc(sizeof(struct user_command));
+				  if(cmd == NULL){
+					  exit(98);
+				  }
+				  osMessageQueueGet(CommandQueueHandle, &cmd, 0, 0);
+				  sig_gen(cmd, &hrng, &hdac1);
+				  sprintf(buf,"\r\n Enter another wave generation! \r\n");
+				  HAL_UART_Transmit(&huart2, (uint8_t *)buf, strlen(buf), 100);
+				  free(cmd);
+
+		  }
+
+			  osMutexRelease(MUTEXHandle);
+		   vTaskDelay(100);
   }
   /* USER CODE END StartRecieveCommand */
 }
