@@ -1,8 +1,8 @@
 /*
  * Signal_Generator.c
  *
- *  Created on: Nov 6, 2023
- *      Author: tcber
+ *  Created on: Apr 20, 2023
+ *      Author: Beekman
  */
 
 
