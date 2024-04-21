@@ -1,3 +1,4 @@
+"./Core/Src/Process_Commands.o"
 "./Core/Src/Signal_Generator.o"
 "./Core/Src/freertos.o"
 "./Core/Src/main.o"
