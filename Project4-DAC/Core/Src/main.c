@@ -20,7 +20,6 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "Signal_Generator.h"
-#include "Process_Commands.h"
 #include "string.h"
 #include "stdlib.h"
 #include "stdio.h"
@@ -514,89 +513,94 @@ void StartProcessCommand(void *argument)
   /* USER CODE BEGIN 5 */
 	char command_buffer[100];
 	char print_buffer[256];
-	static int i = 0;
+	int i = 0;
 	int print_size = 0;
 	int valid_entry = 0;
   /* Infinite loop */
   for(;;)
   {
 	  	uint8_t c = 0;
-	  	HAL_UART_Receive(&huart2, &c, 1, 100);
+	  	HAL_UART_Receive(&huart2, &c, 1, 100);					// Read and print inputted char
 	  	HAL_UART_Transmit(&huart2, &c, 1, 100);
+
 	  	if ((char)c == '\r'){
-//	  		HAL_UART_Transmit(&huart2, (uint8_t*) buffer, i+1, 100);
+//	  		if enter is pressed, process command to see if valid
 	  		struct user_command* command = (struct user_command *)malloc(sizeof(struct user_command));
 	  		command_buffer[i] = '\r';
 	  		command_buffer[i+1] = '\n';
 	  		command_buffer[i+2] = '\0';
 	  		print_size = sprintf(print_buffer, command_buffer);
-	  		HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
-	  		char* word = strtok(command_buffer, " ");
-	  		i = 0;
-	  		valid_entry = 1;
+	  		HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);		// prints inputted command
+	  		char* word = strtok(command_buffer, " ");									// split string to just command name
+	  		i = 0;																		// reset index
+	  		valid_entry = 1;															// by default, valid input - later conditions alter if needed
 
-	  		word = strtok(NULL, " ");
+	  		word = strtok(NULL, " ");													// split to next info
 	  		int ivalue = atoi(word);
-	  		if (ivalue >= 3 || ivalue <= 0){
+	  		if (ivalue >= 3 || ivalue <= 0){											// check if channel value valid
+	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Channel value must be 1 or 2\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
-	  			valid_entry = 0;
 	  		}
 	  		command->channel = ivalue;
+
 	  		word = strtok(NULL, " ");
-	  		if (*word != "A" && *word != 'R' && *word != 'S' && *word != 'T'){
+	  		if (*word != 'A' && *word != 'R' && *word != 'S' && *word != 'T'){			// check if wave type is valid
+	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Wave type must be S = sine, T = triangle, R = rectangle or A = arbitrary/EKG\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
-	  			valid_entry = 0;
 	  		}
 	  		command->wave = *word;
+
 	  		word = strtok(NULL, " ");
 	  		int fvalue = atof(word);
-	  		if (fvalue > 10000 || fvalue < 0.5 || fvalue != 0){
+	  		if (fvalue > 10000 || fvalue < 0.5 || fvalue != 0){							// check if frequncy value is valid
+	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Frequency must be between 0.5 Hz and 10 kHz, or 0 for DC\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
-	  			valid_entry = 0;
 	  		}
 	  		command->frequency = fvalue;
+
 	  		word = strtok(NULL, " ");
 	  		fvalue = atof(word);
-	  		if (fvalue > 3.3 || fvalue < 0){
+	  		if (fvalue > 3.3 || fvalue < 0){											// check if min voltage value is valid
+	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Min Voltage must be between 0v and 3.3v\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
-	  			valid_entry = 0;
 	  		}
 	  		command->minv = fvalue;
+
 	  		word = strtok(NULL, " ");
 	  		fvalue = atof(word);
-	  		if (fvalue > 3.3 || fvalue < 0){
+	  		if (fvalue > 3.3 || fvalue < 0){											// check if max voltage value is valid
+	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Max Voltage must be between 0v and 3.3v\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
-	  			valid_entry = 0;
-	  		} else if (ivalue < command->minv){
+	  		} else if (ivalue <= command->minv){										// check if max voltage value is less than min voltage
+	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Max Voltage must be between less than Min Voltage\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
-	  			valid_entry = 0;
 	  		}
 	  		command->maxv = fvalue;
+
 	  		word = strtok(NULL, " ");
 	  		ivalue = atoi(word);
-	  		if (ivalue > 12 || ivalue < 0){
+	  		if (ivalue > 12 || ivalue < 0){												// check if noise value is valid
+	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Noise value must be between 0 and 12 (inclusive)\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
-	  			valid_entry = 0;
 	  		}
 	  		command->noise = ivalue;
 
-//	  		int s = sprintf(buf, "\r\nGen Channel: %d, wave: %c, freq: %f, minv: %f, maxv: %f, moise: %d\r\n", command->channel, command->wave, command->frequency, command->minv, command->maxv, command->noise);
-
-  			if (valid_entry){
+  			if (valid_entry){													// if command is valid, then add to queue
 				osMutexAcquire(MUTEXHandle, osWaitForever);
 				osMessageQueuePut(CommandQueueHandle, &command, 0, 0);
 				osMutexRelease(MUTEXHandle);
 				valid_entry = 0;
   			}
-	  	} else if (c != 0){
-	  		command_buffer[i] = c;
+
+	  	} else if (c != 0){						// if character is valid and not enter key
+	  		command_buffer[i] = c;				// add to buffer to save
 	  		i++;
 	  	}
 
