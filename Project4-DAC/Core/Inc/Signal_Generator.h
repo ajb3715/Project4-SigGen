@@ -1,8 +1,8 @@
 /*
  * Signal_Generator.h
  *
- *  Created on: Nov 6, 2023
- *      Author: tcber
+ *  Created on: Apr 20, 2024
+ *      Author: Beekman
  */
 
 #ifndef INC_SIGNAL_GENERATOR_H_
