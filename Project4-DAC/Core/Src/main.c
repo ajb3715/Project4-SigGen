@@ -565,7 +565,7 @@ void StartProcessCommand(void *argument)
 	  		command->wave = *word;
 
 	  		word = strtok(NULL, " ");
-	  		int fvalue = atof(word);
+	  		double fvalue = atof(word);
 	  		if ((fvalue > 10000 || fvalue < 0.5) && fvalue != 0){							// check if frequncy value is valid
 	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Frequency must be between 0.5 Hz and 10 kHz, or 0 for DC\r\n");
@@ -581,6 +581,8 @@ void StartProcessCommand(void *argument)
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
 	  		}
 	  		command->minv = fvalue;
+	  		print_size = sprintf(print_buffer, "Min Voltage %f, %f\r\n", command->minv, fvalue);
+	  		HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
 
 	  		word = strtok(NULL, " ");
 	  		fvalue = atof(word);

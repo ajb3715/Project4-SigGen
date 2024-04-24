@@ -8,5 +8,5 @@
 ../Core/Src/main.c:469:13:MX_DMA_Init	1
 ../Core/Src/main.c:490:13:MX_GPIO_Init	1
 ../Core/Src/main.c:523:6:StartProcessCommand	20
-../Core/Src/main.c:629:6:StartRecieveCommand	2
-../Core/Src/main.c:660:6:Error_Handler	1
+../Core/Src/main.c:631:6:StartRecieveCommand	2
+../Core/Src/main.c:662:6:Error_Handler	1
