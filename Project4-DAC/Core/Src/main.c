@@ -55,6 +55,8 @@ TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart2;
 
+struct user_command *command;
+
 /* Definitions for ProcessCommand */
 osThreadId_t ProcessCommandHandle;
 const osThreadAttr_t ProcessCommand_attributes = {
@@ -111,6 +113,16 @@ void StartRecieveCommand(void *argument);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	command = (struct user_command *)malloc(sizeof(struct user_command));
+		if(command == NULL){
+			exit(99);
+		}
+		command->channel = 0;
+		command->frequency = 0.0;
+		command->maxv = 0.0;
+		command->minv = 0.0;
+		command->noise = 0;
+		command->wave = 'n';
 
   /* USER CODE END 1 */
 
@@ -519,13 +531,13 @@ void StartProcessCommand(void *argument)
   /* Infinite loop */
   for(;;)
   {
+	    osMutexAcquire(MUTEXHandle, osWaitForever);
 	  	uint8_t c = 0;
 	  	HAL_UART_Receive(&huart2, &c, 1, 100);					// Read and print inputted char
 	  	HAL_UART_Transmit(&huart2, &c, 1, 100);
 
 	  	if ((char)c == '\r'){
 //	  		if enter is pressed, process command to see if valid
-	  		struct user_command* command = (struct user_command *)malloc(sizeof(struct user_command));
 	  		command_buffer[i] = '\r';
 	  		command_buffer[i+1] = '\n';
 	  		command_buffer[i+2] = '\0';
@@ -554,7 +566,7 @@ void StartProcessCommand(void *argument)
 
 	  		word = strtok(NULL, " ");
 	  		int fvalue = atof(word);
-	  		if (fvalue > 10000 || fvalue < 0.5 || fvalue != 0){							// check if frequncy value is valid
+	  		if ((fvalue > 10000 || fvalue < 0.5) && fvalue != 0){							// check if frequncy value is valid
 	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Frequency must be between 0.5 Hz and 10 kHz, or 0 for DC\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
@@ -593,9 +605,7 @@ void StartProcessCommand(void *argument)
 	  		command->noise = ivalue;
 
   			if (valid_entry){													// if command is valid, then add to queue
-				osMutexAcquire(MUTEXHandle, osWaitForever);
 				osMessageQueuePut(CommandQueueHandle, &command, 0, 0);
-				osMutexRelease(MUTEXHandle);
 				valid_entry = 0;
   			}
 
@@ -603,6 +613,7 @@ void StartProcessCommand(void *argument)
 	  		command_buffer[i] = c;				// add to buffer to save
 	  		i++;
 	  	}
+	  	osMutexRelease(MUTEXHandle);
 
   }
   /* USER CODE END 5 */
