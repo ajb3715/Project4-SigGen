@@ -516,6 +516,8 @@ void StartRecieve(void *argument)
 	int i = 0;
 	int print_size = 0;
 	int valid_entry = 0;
+	print_size = sprintf(print_buffer, "Welcome to the Signal Generator!\r\nEnter signal parameters to get started: <gen> <channel> <type> <frequency> <min v> <max v> <noise>\r\n");
+	HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
   /* Infinite loop */
   for(;;)
   {
@@ -576,7 +578,7 @@ void StartRecieve(void *argument)
 	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Max Voltage must be between 0v and 3.3v\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
-	  		} else if (ivalue <= command->minv){										// check if max voltage value is less than min voltage
+	  		} else if (fvalue <= command->minv){										// check if max voltage value is less than min voltage
 	  			valid_entry = 0;														// if not make command invalid
 	  			print_size = sprintf(print_buffer, "Max Voltage must be between less than Min Voltage\r\n");
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
@@ -595,6 +597,13 @@ void StartRecieve(void *argument)
   			if (valid_entry){													// if command is valid, then add to queue
 				osMessageQueuePut(CommandQueueHandle, &command, 0, 0);
 				valid_entry = 0;
+				print_size = sprintf(print_buffer, "Generating signal with:\r\nChannel: %d\r\nType: %c\r\nFrequency: %f\r\nMin Voltage: %f\r\nMax Voltage: %f\r\nNoise: %d\r\n", command->channel, command->wave, command->frequency, command->maxv, command->minv, command->noise);
+				HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
+  			} else {
+  				print_size = sprintf(print_buffer, "At least one parameter is missing, please try again and verify your parameters:\r\n");
+  				HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
+  				print_size = sprintf(print_buffer, "<gen> <channel> <type> <frequency> <min v> <max v> <noise>\r\n");
+  				HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
   			}
 
 	  	} else if ((c == 8 || c == 127) && (i >= 1)){
