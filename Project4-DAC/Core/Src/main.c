@@ -528,11 +528,11 @@ void StartRecieve(void *argument)
 	  	if ((char)c == '\r'){
 //	  		if enter is pressed, process command to see if valid
 	  		HAL_UART_Transmit(&huart2, (uint8_t *)"\r\n", 2, 100);
-	  		command_buffer[i] = '\r';
-	  		command_buffer[i+1] = '\n';
-	  		command_buffer[i+2] = '\0';
-	  		print_size = sprintf(print_buffer, command_buffer);
-	  		HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);		// prints inputted command
+	  		command_buffer[i] = '\0';
+//	  		command_buffer[i+1] = '\n';
+//	  		command_buffer[i+2] = '\0';
+//	  		print_size = sprintf(print_buffer, command_buffer);
+//	  		HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);		// prints inputted command
 	  		char* word = strtok(command_buffer, " ");									// split string to just command name
 	  		i = 0;																		// reset index
 	  		valid_entry = 1;															// by default, valid input - later conditions alter if needed
