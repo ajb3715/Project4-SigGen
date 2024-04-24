@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2023 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -116,9 +116,9 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* hdac)
     hdma_dac_ch1.Init.Direction = DMA_MEMORY_TO_PERIPH;
     hdma_dac_ch1.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_dac_ch1.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_dac_ch1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_dac_ch1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_dac_ch1.Init.Mode = DMA_NORMAL;
+    hdma_dac_ch1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_dac_ch1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+    hdma_dac_ch1.Init.Mode = DMA_CIRCULAR;
     hdma_dac_ch1.Init.Priority = DMA_PRIORITY_LOW;
     if (HAL_DMA_Init(&hdma_dac_ch1) != HAL_OK)
     {
@@ -133,9 +133,9 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* hdac)
     hdma_dac_ch2.Init.Direction = DMA_MEMORY_TO_PERIPH;
     hdma_dac_ch2.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_dac_ch2.Init.MemInc = DMA_MINC_ENABLE;
-    hdma_dac_ch2.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_dac_ch2.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_dac_ch2.Init.Mode = DMA_NORMAL;
+    hdma_dac_ch2.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_dac_ch2.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+    hdma_dac_ch2.Init.Mode = DMA_CIRCULAR;
     hdma_dac_ch2.Init.Priority = DMA_PRIORITY_LOW;
     if (HAL_DMA_Init(&hdma_dac_ch2) != HAL_OK)
     {
@@ -202,11 +202,11 @@ void HAL_RNG_MspInit(RNG_HandleTypeDef* hrng)
   */
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RNG;
     PeriphClkInit.RngClockSelection = RCC_RNGCLKSOURCE_PLLSAI1;
-    PeriphClkInit.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_HSI;
+    PeriphClkInit.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_MSI;
     PeriphClkInit.PLLSAI1.PLLSAI1M = 1;
     PeriphClkInit.PLLSAI1.PLLSAI1N = 16;
     PeriphClkInit.PLLSAI1.PLLSAI1P = RCC_PLLP_DIV7;
-    PeriphClkInit.PLLSAI1.PLLSAI1Q = RCC_PLLQ_DIV8;
+    PeriphClkInit.PLLSAI1.PLLSAI1Q = RCC_PLLQ_DIV2;
     PeriphClkInit.PLLSAI1.PLLSAI1R = RCC_PLLR_DIV2;
     PeriphClkInit.PLLSAI1.PLLSAI1ClockOut = RCC_PLLSAI1_48M2CLK;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
@@ -216,9 +216,6 @@ void HAL_RNG_MspInit(RNG_HandleTypeDef* hrng)
 
     /* Peripheral clock enable */
     __HAL_RCC_RNG_CLK_ENABLE();
-    /* RNG interrupt Init */
-    HAL_NVIC_SetPriority(RNG_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(RNG_IRQn);
   /* USER CODE BEGIN RNG_MspInit 1 */
 
   /* USER CODE END RNG_MspInit 1 */
@@ -241,9 +238,6 @@ void HAL_RNG_MspDeInit(RNG_HandleTypeDef* hrng)
   /* USER CODE END RNG_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_RNG_CLK_DISABLE();
-
-    /* RNG interrupt DeInit */
-    HAL_NVIC_DisableIRQ(RNG_IRQn);
   /* USER CODE BEGIN RNG_MspDeInit 1 */
 
   /* USER CODE END RNG_MspDeInit 1 */
@@ -350,7 +344,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     PA2     ------> USART2_TX
     PA3     ------> USART2_RX
     */
-    GPIO_InitStruct.Pin = USART_TX_Pin|USART_RX_Pin;
+    GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -384,7 +378,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
     PA2     ------> USART2_TX
     PA3     ------> USART2_RX
     */
-    HAL_GPIO_DeInit(GPIOA, USART_TX_Pin|USART_RX_Pin);
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2|GPIO_PIN_3);
 
   /* USER CODE BEGIN USART2_MspDeInit 1 */
 

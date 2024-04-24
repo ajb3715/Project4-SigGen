@@ -19,10 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-#include "Signal_Generator.h"
-#include "string.h"
-#include "stdlib.h"
-#include "stdio.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -55,19 +52,17 @@ TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart2;
 
-struct user_command *command;
-
-/* Definitions for ProcessCommand */
-osThreadId_t ProcessCommandHandle;
-const osThreadAttr_t ProcessCommand_attributes = {
-  .name = "ProcessCommand",
+/* Definitions for DAC1 */
+osThreadId_t DAC1Handle;
+const osThreadAttr_t DAC1_attributes = {
+  .name = "DAC1",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for RecieveCommand */
-osThreadId_t RecieveCommandHandle;
-const osThreadAttr_t RecieveCommand_attributes = {
-  .name = "RecieveCommand",
+/* Definitions for Reciever */
+osThreadId_t RecieverHandle;
+const osThreadAttr_t Reciever_attributes = {
+  .name = "Reciever",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
@@ -79,7 +74,8 @@ const osMessageQueueAttr_t CommandQueue_attributes = {
 /* Definitions for MUTEX */
 osMutexId_t MUTEXHandle;
 const osMutexAttr_t MUTEX_attributes = {
-  .name = "MUTEX"
+  .name = "MUTEX",
+  .attr_bits = osMutexRecursive,
 };
 /* USER CODE BEGIN PV */
 
@@ -89,13 +85,13 @@ const osMutexAttr_t MUTEX_attributes = {
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_USART2_UART_Init(void);
 static void MX_DAC1_Init(void);
-static void MX_TIM2_Init(void);
-static void MX_TIM5_Init(void);
 static void MX_RNG_Init(void);
-void StartProcessCommand(void *argument);
-void StartRecieveCommand(void *argument);
+static void MX_TIM2_Init(void);
+static void MX_USART2_UART_Init(void);
+static void MX_TIM5_Init(void);
+void StartDAC(void *argument);
+void StartReciever(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -103,7 +99,7 @@ void StartRecieveCommand(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+struct user_command *command;
 /* USER CODE END 0 */
 
 /**
@@ -145,11 +141,11 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_USART2_UART_Init();
   MX_DAC1_Init();
-  MX_TIM2_Init();
-  MX_TIM5_Init();
   MX_RNG_Init();
+  MX_TIM2_Init();
+  MX_USART2_UART_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim2);
   HAL_TIM_Base_Start(&htim5);
@@ -158,7 +154,8 @@ int main(void)
 
   /* Init scheduler */
   osKernelInitialize();
-  /* Create the mutex(es) */
+
+  /* Create the recursive mutex(es) */
   /* creation of MUTEX */
   MUTEXHandle = osMutexNew(&MUTEX_attributes);
 
@@ -176,18 +173,18 @@ int main(void)
 
   /* Create the queue(s) */
   /* creation of CommandQueue */
-  CommandQueueHandle = osMessageQueueNew (16, sizeof(uint16_t), &CommandQueue_attributes);
+  CommandQueueHandle = osMessageQueueNew (32, sizeof(uint64_t), &CommandQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of ProcessCommand */
-  ProcessCommandHandle = osThreadNew(StartProcessCommand, NULL, &ProcessCommand_attributes);
+  /* creation of DAC1 */
+  DAC1Handle = osThreadNew(StartDAC, NULL, &DAC1_attributes);
 
-  /* creation of RecieveCommand */
-  RecieveCommandHandle = osThreadNew(StartRecieveCommand, NULL, &RecieveCommand_attributes);
+  /* creation of Reciever */
+  RecieverHandle = osThreadNew(StartReciever, NULL, &Reciever_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -231,13 +228,14 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.MSIState = RCC_MSI_ON;
+  RCC_OscInitStruct.MSICalibrationValue = 0;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
   RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 10;
+  RCC_OscInitStruct.PLL.PLLN = 40;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -371,7 +369,7 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
   {
@@ -416,7 +414,7 @@ static void MX_TIM5_Init(void)
   {
     Error_Handler();
   }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
   {
@@ -489,21 +487,11 @@ static void MX_DMA_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
 /* USER CODE BEGIN MX_GPIO_Init_1 */
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin : B1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -513,14 +501,14 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartProcessCommand */
+/* USER CODE BEGIN Header_StartDAC */
 /**
-  * @brief  Function implementing the ProcessCommand thread.
+  * @brief  Function implementing the DAC1 thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartProcessCommand */
-void StartProcessCommand(void *argument)
+/* USER CODE END Header_StartDAC */
+void StartDAC(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	char command_buffer[100];
@@ -616,43 +604,29 @@ void StartProcessCommand(void *argument)
 	  		i++;
 	  	}
 	  	osMutexRelease(MUTEXHandle);
+	  	osThreadYield();
+
 
   }
   /* USER CODE END 5 */
 }
 
-/* USER CODE BEGIN Header_StartRecieveCommand */
+/* USER CODE BEGIN Header_StartReciever */
 /**
-* @brief Function implementing the RecieveCommand thread.
+* @brief Function implementing the Reciever thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartRecieveCommand */
-void StartRecieveCommand(void *argument)
+/* USER CODE END Header_StartReciever */
+void StartReciever(void *argument)
 {
-  /* USER CODE BEGIN StartRecieveCommand */
+  /* USER CODE BEGIN StartReciever */
   /* Infinite loop */
   for(;;)
   {
-  osMutexAcquire(MUTEXHandle, osWaitForever);
-			  if(osMessageQueueGetCount(CommandQueueHandle) != 0){
-				  char buf[256];
-				  struct user_command *cmd = (struct user_command *)malloc(sizeof(struct user_command));
-				  if(cmd == NULL){
-					  exit(98);
-				  }
-				  osMessageQueueGet(CommandQueueHandle, &cmd, 0, 0);
-				  sig_gen(cmd, &hrng, &hdac1);
-				  sprintf(buf,"\r\n Enter another wave generation! \r\n");
-				  HAL_UART_Transmit(&huart2, (uint8_t *)buf, strlen(buf), 100);
-				  free(cmd);
-
-		  }
-
-			  osMutexRelease(MUTEXHandle);
-		   vTaskDelay(100);
+    osDelay(1);
   }
-  /* USER CODE END StartRecieveCommand */
+  /* USER CODE END StartReciever */
 }
 
 /**
