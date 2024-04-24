@@ -7,6 +7,6 @@
 ../Core/Src/main.c:434:13:MX_USART2_UART_Init	2
 ../Core/Src/main.c:467:13:MX_DMA_Init	1
 ../Core/Src/main.c:488:13:MX_GPIO_Init	1
-../Core/Src/main.c:511:6:StartDAC	23
-../Core/Src/main.c:624:6:StartReciever	1
-../Core/Src/main.c:639:6:Error_Handler	1
+../Core/Src/main.c:511:6:StartRecieve	23
+../Core/Src/main.c:624:6:StartProcess	2
+../Core/Src/main.c:655:6:Error_Handler	1

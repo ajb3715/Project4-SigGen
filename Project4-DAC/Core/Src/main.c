@@ -52,17 +52,17 @@ TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart2;
 
-/* Definitions for DAC1 */
-osThreadId_t DAC1Handle;
-const osThreadAttr_t DAC1_attributes = {
-  .name = "DAC1",
+/* Definitions for Recieve */
+osThreadId_t RecieveHandle;
+const osThreadAttr_t Recieve_attributes = {
+  .name = "Recieve",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for Reciever */
-osThreadId_t RecieverHandle;
-const osThreadAttr_t Reciever_attributes = {
-  .name = "Reciever",
+/* Definitions for Process */
+osThreadId_t ProcessHandle;
+const osThreadAttr_t Process_attributes = {
+  .name = "Process",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
@@ -90,8 +90,8 @@ static void MX_RNG_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM5_Init(void);
-void StartDAC(void *argument);
-void StartReciever(void *argument);
+void StartRecieve(void *argument);
+void StartProcess(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -180,11 +180,11 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of DAC1 */
-  DAC1Handle = osThreadNew(StartDAC, NULL, &DAC1_attributes);
+  /* creation of Recieve */
+  RecieveHandle = osThreadNew(StartRecieve, NULL, &Recieve_attributes);
 
-  /* creation of Reciever */
-  RecieverHandle = osThreadNew(StartReciever, NULL, &Reciever_attributes);
+  /* creation of Process */
+  ProcessHandle = osThreadNew(StartProcess, NULL, &Process_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -501,14 +501,14 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartDAC */
+/* USER CODE BEGIN Header_StartRecieve */
 /**
-  * @brief  Function implementing the DAC1 thread.
+  * @brief  Function implementing the Recieve thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDAC */
-void StartDAC(void *argument)
+/* USER CODE END Header_StartRecieve */
+void StartRecieve(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	char command_buffer[100];
@@ -614,22 +614,38 @@ void StartDAC(void *argument)
   /* USER CODE END 5 */
 }
 
-/* USER CODE BEGIN Header_StartReciever */
+/* USER CODE BEGIN Header_StartProcess */
 /**
-* @brief Function implementing the Reciever thread.
+* @brief Function implementing the Process thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartReciever */
-void StartReciever(void *argument)
+/* USER CODE END Header_StartProcess */
+void StartProcess(void *argument)
 {
-  /* USER CODE BEGIN StartReciever */
+  /* USER CODE BEGIN StartProcess */
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  osMutexAcquire(MUTEXHandle, osWaitForever);
+	 			  if(osMessageQueueGetCount(CommandQueueHandle) != 0){
+	 				  char buf[256];
+	 				  struct user_command *cmd = (struct user_command *)malloc(sizeof(struct user_command));
+	 				  if(cmd == NULL){
+	 					  exit(98);
+	 				  }
+	 				  osMessageQueueGet(CommandQueueHandle, &cmd, 0, 0);
+	 				  sig_gen(cmd, &hrng, &hdac1);
+	 				  sprintf(buf,"\r\n Enter another wave generation! \r\n");
+	 				  HAL_UART_Transmit(&huart2, (uint8_t *)buf, strlen(buf), 100);
+	 				  free(cmd);
+
+	 		  }
+
+	 			  osMutexRelease(MUTEXHandle);
+	 		   vTaskDelay(100);
   }
-  /* USER CODE END StartReciever */
+  /* USER CODE END StartProcess */
 }
 
 /**
