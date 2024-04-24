@@ -522,10 +522,10 @@ void StartDAC(void *argument)
 	    osMutexAcquire(MUTEXHandle, osWaitForever);
 	  	uint8_t c = 0;
 	  	HAL_UART_Receive(&huart2, &c, 1, 100);					// Read and print inputted char
-	  	HAL_UART_Transmit(&huart2, &c, 1, 100);
 
 	  	if ((char)c == '\r'){
 //	  		if enter is pressed, process command to see if valid
+	  		HAL_UART_Transmit(&huart2, (uint8_t *)"\r\n", 2, 100);
 	  		command_buffer[i] = '\r';
 	  		command_buffer[i+1] = '\n';
 	  		command_buffer[i+2] = '\0';
@@ -569,8 +569,6 @@ void StartDAC(void *argument)
 	  			HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
 	  		}
 	  		command->minv = fvalue;
-	  		print_size = sprintf(print_buffer, "Min Voltage %f, %f\r\n", command->minv, fvalue);
-	  		HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
 
 	  		word = strtok(NULL, " ");
 	  		fvalue = atof(word);
@@ -599,7 +597,12 @@ void StartDAC(void *argument)
 				valid_entry = 0;
   			}
 
+	  	} else if ((c == 8 || c == 127) && (i >= 1)){
+	  		command_buffer[--i] = '\0';
+	  		print_size = sprintf(print_buffer, "%c %c", 8, 8);
+	  		HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
 	  	} else if (c != 0){						// if character is valid and not enter key
+	  		HAL_UART_Transmit(&huart2, &c, 1, 100);
 	  		command_buffer[i] = c;				// add to buffer to save
 	  		i++;
 	  	}
