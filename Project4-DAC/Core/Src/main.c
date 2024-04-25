@@ -599,6 +599,14 @@ void StartRecieve(void *argument)
 				valid_entry = 0;
 				print_size = sprintf(print_buffer, "Generating signal with:\r\nChannel: %d\r\nType: %c\r\nFrequency: %f\r\nMin Voltage: %f\r\nMax Voltage: %f\r\nNoise: %d\r\n", command->channel, command->wave, command->frequency, command->maxv, command->minv, command->noise);
 				HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
+				sprintf(print_buffer, "DAC Frequency %f \r\n", (float)(80000000.0 / ((float)SAMPLES * (float)command->frequency)));
+				HAL_UART_Transmit(&huart2, (uint8_t *)print_buffer, strlen(print_buffer), 100);
+				sprintf(print_buffer, "Number of Samples: %d \r\n", SAMPLES);
+				HAL_UART_Transmit(&huart2, (uint8_t *)print_buffer, strlen(print_buffer), 100);
+				sprintf(print_buffer, "Voltage Range: %.2f V - %.2f V \r\n", command->minv, command->maxv);
+				HAL_UART_Transmit(&huart2, (uint8_t *)print_buffer, strlen(print_buffer), 100);
+				sprintf(print_buffer, "DAC Voltage Range: %.2f V - %.2f \r\n", ((4096.0f/3.3f) * command->minv), ((4096.0f/3.3f) * command->maxv));
+				HAL_UART_Transmit(&huart2, (uint8_t *)print_buffer, strlen(print_buffer), 100);
   			} else {
   				print_size = sprintf(print_buffer, "At least one parameter is missing, please try again and verify your parameters:\r\n");
   				HAL_UART_Transmit(&huart2, (uint8_t*)print_buffer, print_size, 100);
